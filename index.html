@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Puzzle Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .title {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .score {
+            color: #ffeb3b;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        
+        .message {
+            color: white;
+            font-size: 1.3em;
+            margin-bottom: 30px;
+            min-height: 30px;
+        }
+        
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .color-button {
+            width: 80px;
+            height: 80px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .color-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .color-button.active {
+            transform: scale(1.2);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+        }
+        
+        .color-button.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .start-button, .reset-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .start-button:hover, .reset-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .reset-button {
+            background: #2196F3;
+        }
+        
+        .reset-button:hover {
+            background: #1976D2;
+        }
+        
+        .red { background-color: #f44336; }
+        .blue { background-color: #2196F3; }
+        .green { background-color: #4CAF50; }
+        .yellow { background-color: #ffeb3b; }
+        .purple { background-color: #9c27b0; }
+        .orange { background-color: #ff9800; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="title">🧠 Mind Puzzle</h1>
+        <div class="score">Level: <span id="level">1</span> | Score: <span id="score">0</span></div>
+        <div class="message" id="message">Watch the sequence, then repeat it!</div>
+        
+        <div class="color-grid" id="colorGrid" style="display: none;">
+            <button class="color-button red" data-color="0"></button>
+            <button class="color-button blue" data-color="1"></button>
+            <button class="color-button green" data-color="2"></button>
+            <button class="color-button yellow" data-color="3"></button>
+            <button class="color-button purple" data-color="4"></button>
+            <button class="color-button orange" data-color="5"></button>
+        </div>
+        
+        <button class="start-button" id="startButton" onclick="startGame()">Start Game</button>
+        <button class="reset-button" id="resetButton" onclick="resetGame()" style="display: none;">Play Again</button>
+    </div>
+
+    <script>
+        let sequence = [];
+        let userInput = [];
+        let level = 1;
+        let score = 0;
+        let gameState = 'start'; // start, showing, playing, gameOver
+        let currentStep = 0;
+
+        const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+
+        function updateDisplay() {
+            document.getElementById('level').textContent = level;
+            document.getElementById('score').textContent = score;
+        }
+
+        function showMessage(text) {
+            document.getElementById('message').textContent = text;
+        }
+
+        function generateSequence() {
+            sequence = [];
+            const sequenceLength = level + 2;
+            for (let i = 0; i < sequenceLength; i++) {
+                sequence.push(Math.floor(Math.random() * 6));
+            }
+        }
+
+        function startGame() {
+            generateSequence();
+            userInput = [];
+            currentStep = 0;
+            gameState = 'showing';
+            
+            document.getElementById('startButton').style.display = 'none';
+            document.getElementById('resetButton').style.display = 'none';
+            document.getElementById('colorGrid').style.display = 'grid';
+            
+            showSequence();
+        }
+
+        function showSequence() {
+            showMessage('Watch carefully...');
+            disableButtons();
+            
+            let step = 0;
+            function showNext() {
+                if (step < sequence.length) {
+                    const colorIndex = sequence[step];
+                    const button = document.querySelector(`[data-color="${colorIndex}"]`);
+                    
+                    button.classList.add('active');
+                    
+                    setTimeout(() => {
+                        button.classList.remove('active');
+                        step++;
+                        if (step < sequence.length) {
+                            setTimeout(showNext, 300);
+                        } else {
+                            setTimeout(() => {
+                                gameState = 'playing';
+                                showMessage(`Your turn! (${userInput.length + 1}/${sequence.length})`);
+                                enableButtons();
+                            }, 500);
+                        }
+                    }, 600);
+                }
+            }
+            showNext();
+        }
+
+        function enableButtons() {
+            const buttons = document.querySelectorAll('.color-button');
+            buttons.forEach(button => {
+                button.classList.remove('disabled');
+                button.onclick = () => handleColorClick(parseInt(button.dataset.color));
+            });
+        }
+
+        function disableButtons() {
+            const buttons = document.querySelectorAll('.color-button');
+            buttons.forEach(button => {
+                button.classList.add('disabled');
+                button.onclick = null;
+            });
+        }
+
+        function handleColorClick(colorIndex) {
+            if (gameState !== 'playing') return;
+
+            userInput.push(colorIndex);
+
+            if (sequence[userInput.length - 1] === colorIndex) {
+                if (userInput.length === sequence.length) {
+                    // Level complete!
+                    score += level * 10;
+                    level++;
+                    updateDisplay();
+                    showMessage('Correct! Next level...');
+                    
+                    setTimeout(() => {
+                        startGame();
+                    }, 1500);
+                } else {
+                    showMessage(`Your turn! (${userInput.length + 1}/${sequence.length})`);
+                }
+            } else {
+                // Game over
+                gameState = 'gameOver';
+                showMessage(`Game Over! Final Score: ${score}`);
+                disableButtons();
+                document.getElementById('resetButton').style.display = 'inline-block';
+            }
+        }
+
+        function resetGame() {
+            level = 1;
+            score = 0;
+            sequence = [];
+            userInput = [];
+            gameState = 'start';
+            currentStep = 0;
+            
+            updateDisplay();
+            showMessage('Watch the sequence, then repeat it!');
+            
+            document.getElementById('startButton').style.display = 'inline-block';
+            document.getElementById('resetButton').style.display = 'none';
+            document.getElementById('colorGrid').style.display = 'none';
+        }
+
+        // Initialize
+        updateDisplay();
+    </script>
+</body>
+</html>
